@@ -29,87 +29,62 @@ namespace WpfApp1
     /// </summary>
     public partial class MainWindow : Window
     {
+        IPEndPoint? clientEP = null;
+        IPEndPoint? server = null;
+        UdpClient? client = null;
         public MainWindow()
         {
             InitializeComponent();
+
+            clientEP = new IPEndPoint(IPAddress.Parse("127.1.1.1"), 12);
+            server = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 45678);
+            client = new UdpClient(clientEP);
         }
 
-        private void btn_Click(object sender, RoutedEventArgs e)
+        private async void btn_Click(object sender, RoutedEventArgs e)
         {
-            var ip = IPAddress.Parse("127.0.0.1");
-            var port = 45678;
+            var pulse = Encoding.Default.GetBytes("hello");
 
-            var server = new IPEndPoint(ip, port);
-
-            var clientEP = new IPEndPoint(IPAddress.Parse("127.1.1.1"), 12);
-
-            var cilent = new UdpClient(clientEP);
-
-            byte[] buffer1 = new byte[100000];
-
-            var msg = string.Empty;
-            var buffer = Array.Empty<byte>();
-
-            buffer = Encoding.Default.GetBytes("hello");
-            cilent.Send(buffer, buffer.Length, server);
-
-            var size = cilent.Receive(ref server);
-            int si = int.Parse(Encoding.Default.GetString(size));
-            var c = cilent.Receive(ref server);
-            int num = int.Parse(Encoding.Default.GetString(c));
-            byte[] arr = new byte[si];
-
-            List<byte[]> bytes = new List<byte[]>();
-            int len = 0;
-
-            for (int i = 0; i < num; i++)
+            if(client != null)
             {
-                var r = cilent.Receive(ref server);
-                len += r.Length;
-                bytes.Add(r);
-            }
+                await client.SendAsync(pulse, pulse.Length, server);
 
-            int a = 0;
-            foreach (var item in bytes)
-            {
-                for (int i = 0; i < item.Length; i++)
+                UdpReceiveResult rec_lenght = await client.ReceiveAsync();
+                UdpReceiveResult rec_wholeNum = await client.ReceiveAsync();
+
+                int lenght = int.Parse(Encoding.Default.GetString(rec_lenght.Buffer)), 
+                    wholeNum = int.Parse(Encoding.Default.GetString(rec_wholeNum.Buffer)),
+                    len = 0, a = 0;
+
+                byte[] arr = new byte[lenght];
+                List<byte[]> bytes = new List<byte[]>();
+
+                for (int i = 0; i < wholeNum; i++)
                 {
-                    arr[a++] = item[i];
+                    UdpReceiveResult rec_Bytes = await client.ReceiveAsync();
+                    len += rec_Bytes.Buffer.Length;
+                    bytes.Add(rec_Bytes.Buffer);
+                }
+
+                foreach (var item in bytes)
+                    for (int i = 0; i < item.Length; i++)
+                        arr[a++] = item[i];
+                try
+                {
+                    BitmapImage bitmap = new BitmapImage();
+
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = new MemoryStream(arr);
+                    bitmap.EndInit();
+
+                    img.Source = bitmap;
+
+                }
+                catch (ArgumentException)
+                {
+                    // The byte array does not contain valid image data
                 }
             }
-            //8294400
-            try
-            {
-                //using (MD5 md5 = MD5.Create())
-                //{
-                //    byte[] hash = md5.ComputeHash(arr);
-                //    string hashString = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                //    MessageBox.Show("Image hash value: " + hashString);
-                //}
-
-                MessageBox.Show(
-                    +'\n' + arr[65506].ToString()
-                    + '\n' + arr[65507].ToString()
-                    + '\n' + arr[8294399].ToString()
-                    + '\n' + arr[8294398].ToString()
-                    + '\n' + arr[8294397].ToString() + '\n' + "Len : " + len.ToString());
-
-                BitmapImage bitmap = new BitmapImage();
-
-                bitmap.BeginInit();
-                bitmap.StreamSource = new MemoryStream(arr);
-                bitmap.EndInit();
-
-                MessageBox.Show(bitmap.Width.ToString() + ' ' + bitmap.Height.ToString());
-                img.Source = bitmap;
-
-            }
-            catch (ArgumentException)
-            {
-                // The byte array does not contain valid image data
-            }
-
-
         }
     }
 }
