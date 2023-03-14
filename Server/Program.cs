@@ -25,7 +25,7 @@ while (true)
         Console.Clear();
         size = ScreenResolution.GetScreenResolution();
         sendbuf = ScreenShot.ScreenShotMethod(size).ToArray();
-
+        //OZUM BILEREKDEN CHUNK METHODU ISTIFADE ETMEDIM
         if (sendbuf.Length > 65506)
         {
             int whole_num = (int)(sendbuf.Length / 65506), resudial = sendbuf.Length % 65506, totalLenght = 0;
